@@ -1,0 +1,31 @@
+services:
+  web:
+    container_name: web
+    restart: on-failure:30
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    depends_on:
+      - db
+    networks:
+      - clinic
+    platform: "linux/amd64"
+    env_file: .env
+    ports:
+      - 3344:3344
+
+  db:
+    container_name: db
+    image: postgres:10.6-alpine
+    environment:
+      - POSTGRES_DB=clinic
+      - POSTGRES_USER=clinic  
+      - POSTGRES_PASSWORD=clinic123 
+    networks:
+      - clinic
+    ports:
+      - 5432:5432
+
+networks:
+  clinic:
+    driver: bridge

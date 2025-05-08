@@ -1,0 +1,40 @@
+# Usa uma imagem Node.js padrão
+FROM node:18 AS base
+
+# Define o diretório de trabalho
+WORKDIR /app
+
+# Copia os arquivos necessários para instalação das dependências
+COPY package*.json ./ 
+COPY tsconfig*.json . 
+COPY nest-cli.json . 
+
+# Instala as dependências
+RUN npm install
+
+# Copia o código-fonte para dentro do contêiner
+COPY src ./src
+
+# Compila o projeto TypeScript para JavaScript
+RUN npm run build
+
+# Cria uma nova imagem somente com os arquivos necessários para produção
+FROM node:18 AS production
+
+# Define o diretório de trabalho na imagem final
+WORKDIR /app
+
+# Copia os arquivos compilados e dependências de produção
+COPY --from=base /app/dist ./dist
+COPY --from=base /app/package*.json ./
+
+# Instala apenas as dependências de produção
+RUN npm install
+
+# Executa as migrações antes de iniciar a aplicação
+COPY ./migrations ./migrations 
+
+COPY knexfile.js .
+
+# Define o comando de execução da aplicação e das migrações
+CMD ["sh", "-c", "npx knex migrate:latest && node dist/main"]
